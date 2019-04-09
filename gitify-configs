@@ -3,15 +3,49 @@
 use strict;
 use File::Copy;
 
-my $git_dir="/ssd/configs";
 
-my @scan_dirs=('/home/cisco/config/run', '/home/cisco/config/all');
+my $git_dir;
+my @scan_dirs;
 
 my @files=();
 
 my $count=0;
 
 my $opt_v=0;
+
+my $USAGE="USAGE: $0 -g /git/archive/dir -c /configs/dir [-c /another/configs/dir ...]\n";
+
+
+while(scalar(@ARGV) > 0) {
+  my $opt=shift(@ARGV);
+  if($opt eq "-g") {
+    my $_val=shift @ARGV;
+    if(!defined($_val)) {
+      die $USAGE;
+    };
+    if(! -d $_val) {
+      die "$_val is not a directory\n$USAGE";
+    };
+    $git_dir=$_val;
+  } elsif($opt eq "-v") {
+    $opt_v++;
+  } elsif($opt eq "-c") {
+    my $_val=shift @ARGV;
+    if(!defined($_val)) {
+      die $USAGE;
+    };
+    if(! -d $_val) {
+      die "$_val is not a directory\n$USAGE";
+    };
+    push(@scan_dirs, $_val);
+  } else {
+    die "Unknown option \"$opt\"\n$USAGE";
+  };
+};
+
+if(scalar(@scan_dirs) == 0 || !defined($git_dir)) {
+  die $USAGE;
+};
 
 if($opt_v) { print("\n"); };
 foreach my $dir (@scan_dirs) {
