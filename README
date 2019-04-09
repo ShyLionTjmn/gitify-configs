@@ -4,5 +4,11 @@ Archive is a git repository, keeping track of all config changes.
 Script will scan config files for "hostname blah-blah" string and "/system identity\nset name=blah-blah" for hostanme and create <hostname>.config file.
 Because of that, hostnames MUST be unique across devices.
 
-Git repository dir must be initialized with "git init" before first use.
 
+Git repository dir must be initialized with "git init" before first use.
+Also add some file like README to start HEAD: echo "something" > README && git add README && git commit -m "initializing" README
+
+How to use archive:
+
+  git log -p <hostname>.config
+     To show change log of device

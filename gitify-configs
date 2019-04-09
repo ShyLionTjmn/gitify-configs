@@ -84,7 +84,7 @@ FH:   while(<$fh>) {
         if($opt_v) { print("\n"); };
         printf(STDERR "No hostname in $fqfn\n");
       } else {
-        push(@files, {"host" => $hostname, "mtime" => $stats[9], "file" => $fqfn});
+        push(@files, {"host" => $hostname, "mtime" => $stats[9], "file" => $fqfn, "atime" => $stats[8]});
       };
     };
   };
@@ -100,44 +100,43 @@ foreach my $a (@files) {
   my $gitfile=$$a{'host'}.".config";
   my $gitfqfn=$git_dir."/".$gitfile;
   my $mtime=$$a{'mtime'};
+  my $atime=$$a{'mtime'};
   my $add=0;
   if(! -e $gitfqfn) {
     $add=1;
   };
   if($opt_v) { print("$hostname ".localtime($mtime)." $file\n"); };
   if(!copy($file, $gitfqfn)) { die };
+  utime($atime, $mtime, $gitfqfn);
   if($add) {
     my @cmd=("git", "--work-tree=$git_dir", "--git-dir=$git_dir/.git", "add" , $gitfile);
     if($opt_v > 1) { print("#".join(" ", @cmd)."\n"); };
     system(@cmd);
-    if($? == -1) { die "failed to execute: $!\n"; };
-    if ($? & 127) { die "git died\n"; };
+    if($? == -1) { die "failed to execute: $!\n"."Command was: ".join(" ", @cmd)."\n"; };
+    if ($? & 127) { die "git died\n"."Command was: ".join(" ", @cmd)."\n"; };
     my $gitexit=$?>>8;
     if($gitexit != 0) {
-      print("#".join(" ", @cmd)."\n");
-      die "Git exited with $gitexit code\n";
+      die "Git exited with $gitexit code\n"."Command was: ".join(" ", @cmd)."\n";
     };
   };
   my @cmd=("git", "--work-tree=$git_dir", "--git-dir=$git_dir/.git", "diff-index", "--quiet", "HEAD", "--", $gitfile);
   if($opt_v > 1) { print("#".join(" ", @cmd)."\n"); };
   system(@cmd);
-  if($? == -1) { die "failed to execute: $!\n"; };
-  if ($? & 127) { die "git died\n"; };
+  if($? == -1) { die "failed to execute: $!\n"."Command was: ".join(" ", @cmd)."\n"; };
+  if ($? & 127) { die "git died\n"."Command was: ".join(" ", @cmd)."\n"; };
   my $gitexit=$?>>8;
   if($gitexit == 1) {
     my @cmd=("git", "--work-tree=$git_dir", "--git-dir=$git_dir/.git", "commit", "-m", "some changes","-q", "--allow-empty", $gitfile);
     if($opt_v > 1) { print("#".join(" ", @cmd)."\n"); };
     system(@cmd);
-    if($? == -1) { die "failed to execute: $!\n"; };
-    if ($? & 127) { die "git died\n"; };
+    if($? == -1) { die "failed to execute: $!\n"."Command was: ".join(" ", @cmd)."\n"; };
+    if ($? & 127) { die "git died\n"."Command was: ".join(" ", @cmd)."\n"; };
     my $gitexit=$?>>8;
     if($gitexit != 0) {
-      print("#".join(" ", @cmd)."\n");
-      die "Git exited with $gitexit code\n";
+      die "Git exited with $gitexit code\nCommand was: ".join(" ", @cmd)."\n";
     };
   } elsif($gitexit > 1) {
-    if($opt_v > 1) { print("#".join(" ", @cmd)."\n"); };
-    die "Git exited with $gitexit code\n";
+    die "Git exited with $gitexit code\nCommand was: ".join(" ", @cmd)."\n";
   };
   unlink($file);
 };
