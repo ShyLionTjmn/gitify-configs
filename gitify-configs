@@ -1,0 +1,109 @@
+#!/usr/bin/perl
+
+use strict;
+use File::Copy;
+
+my $git_dir="/ssd/configs";
+
+my @scan_dirs=('/home/cisco/config/run', '/home/cisco/config/all');
+
+my @files=();
+
+my $count=0;
+
+my $opt_v=0;
+
+if($opt_v) { print("\n"); };
+foreach my $dir (@scan_dirs) {
+  if(!opendir(DIR, $dir)) { die }
+  while(my $file=readdir(DIR)) {
+    if($opt_v) { print("$count\r"); };
+    my $fqfn="$dir/$file";
+    if( -f $fqfn && $file =~ /^[a-zA-Z0-9]+[a-zA-Z0-9\-\_\. \:]*$/ && -s $fqfn) {
+      $count++;
+      my $fh;
+      if(!open($fh, "<", $fqfn)) { die }
+      my @stats=stat($fh);
+      if(scalar(@stats) == 0) { die }
+      my $hostname="";
+FH:   while(<$fh>) {
+        s/\n//;
+        s/\r//;
+        if(/^hostname ([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)$/) {
+          $hostname=$1;
+          last FH;
+        } elsif(/^\/system identity$/) {
+          while(<$fh>) {
+            s/\n//;
+            s/\r//;
+            if(/^set name=\"?([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)\"?$/) {
+              $hostname=$1;
+              last FH;
+            } elsif(/^\//) {
+              last FH;
+            };
+          };
+        };
+      };
+      close($fh);
+      if($hostname eq "") {
+        if($opt_v) { print("\n"); };
+        printf(STDERR "No hostname in $fqfn\n");
+      } else {
+        push(@files, {"host" => $hostname, "mtime" => $stats[9], "file" => $fqfn});
+      };
+    };
+  };
+  closedir(DIR);
+};
+if($opt_v) { print("\n"); };
+
+@files=sort{ return $$a{"mtime"} - $$b{"mtime"} } @files;
+
+foreach my $a (@files) {
+  my $hostname=$$a{'host'};
+  my $file=$$a{'file'};
+  my $gitfile=$$a{'host'}.".config";
+  my $gitfqfn=$git_dir."/".$gitfile;
+  my $mtime=$$a{'mtime'};
+  my $add=0;
+  if(! -e $gitfqfn) {
+    $add=1;
+  };
+  if($opt_v) { print("$hostname ".localtime($mtime)." $file\n"); };
+  if(!copy($file, $gitfqfn)) { die };
+  if($add) {
+    my @cmd=("git", "--work-tree=$git_dir", "--git-dir=$git_dir/.git", "add" , $gitfile);
+    if($opt_v > 1) { print("#".join(" ", @cmd)."\n"); };
+    system(@cmd);
+    if($? == -1) { die "failed to execute: $!\n"; };
+    if ($? & 127) { die "git died\n"; };
+    my $gitexit=$?>>8;
+    if($gitexit != 0) {
+      print("#".join(" ", @cmd)."\n");
+      die "Git exited with $gitexit code\n";
+    };
+  };
+  my @cmd=("git", "--work-tree=$git_dir", "--git-dir=$git_dir/.git", "diff-index", "--quiet", "HEAD", "--", $gitfile);
+  if($opt_v > 1) { print("#".join(" ", @cmd)."\n"); };
+  system(@cmd);
+  if($? == -1) { die "failed to execute: $!\n"; };
+  if ($? & 127) { die "git died\n"; };
+  my $gitexit=$?>>8;
+  if($gitexit == 1) {
+    my @cmd=("git", "--work-tree=$git_dir", "--git-dir=$git_dir/.git", "commit", "-m", "some changes","-q", "--allow-empty", $gitfile);
+    if($opt_v > 1) { print("#".join(" ", @cmd)."\n"); };
+    system(@cmd);
+    if($? == -1) { die "failed to execute: $!\n"; };
+    if ($? & 127) { die "git died\n"; };
+    my $gitexit=$?>>8;
+    if($gitexit != 0) {
+      print("#".join(" ", @cmd)."\n");
+      die "Git exited with $gitexit code\n";
+    };
+  } elsif($gitexit > 1) {
+    if($opt_v > 1) { print("#".join(" ", @cmd)."\n"); };
+    die "Git exited with $gitexit code\n";
+  };
+  unlink($file);
+};
