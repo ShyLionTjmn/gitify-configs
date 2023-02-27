@@ -64,9 +64,15 @@ FH:   while(<$fh>) {
         s/\n//;
         s/\r//;
         if(/^hostname ([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)$/) {
+          # Cisco
+          $hostname=$1;
+          last FH;
+        } elsif(/^sysname ([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)$/) {
+          # Huawei
           $hostname=$1;
           last FH;
         } elsif(/^\/system identity$/) {
+          # Mikrotik
           while(<$fh>) {
             s/\n//;
             s/\r//;
@@ -74,6 +80,18 @@ FH:   while(<$fh>) {
               $hostname=$1;
               last FH;
             } elsif(/^\//) {
+              last FH;
+            };
+          };
+        } elsif(/^config system global$/) {
+          # Fortigate
+          while(<$fh>) {
+            s/\n//;
+            s/\r//;
+            if(/^\s+set hostname \"([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)\"$/) {
+              $hostname=$1;
+              last FH;
+            } elsif(/^\S/) {
               last FH;
             };
           };
