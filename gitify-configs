@@ -56,9 +56,11 @@ foreach my $dir (@scan_dirs) {
     if( -f $fqfn && $file =~ /^[a-zA-Z0-9]+[a-zA-Z0-9\-\_\. \:]*$/ && -s $fqfn) {
       $count++;
       my $fh;
-      if(!open($fh, "<", $fqfn)) { die }
+      if(!open($fh, "<", $fqfn)) { die };
       my @stats=stat($fh);
-      if(scalar(@stats) == 0) { die }
+      if(scalar(@stats) == 0) { die };
+      if((time() - $stats[9]) < 60) { next }; # skip fresh files
+      next;
       my $hostname="";
 FH:   while(<$fh>) {
         s/\n//;
