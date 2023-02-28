@@ -60,7 +60,6 @@ foreach my $dir (@scan_dirs) {
       my @stats=stat($fh);
       if(scalar(@stats) == 0) { die };
       if((time() - $stats[9]) < 60) { next }; # skip fresh files
-      next;
       my $hostname="";
 FH:   while(<$fh>) {
         s/\n//;
