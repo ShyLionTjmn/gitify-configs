@@ -12,3 +12,6 @@ How to use archive:
 
   git log -p <hostname>.config
      To show change log of device
+
+  git show HEAD@{2023-08-10}:./<hostname>.config
+     To see version as of day
