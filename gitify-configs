@@ -64,6 +64,7 @@ foreach my $dir (@scan_dirs) {
 FH:   while(<$fh>) {
         s/\n//;
         s/\r//;
+        s/\s+$//;
         if(/^hostname ([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)$/) {
           # Cisco
           $hostname=$1;
