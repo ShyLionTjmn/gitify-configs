@@ -96,6 +96,10 @@ FH:   while(<$fh>) {
               last FH;
             };
           };
+        } elsif(/^config sysname ([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)$/) {
+          # Cisco WLC
+          $hostname=$1;
+          last FH;
         };
       };
       close($fh);
