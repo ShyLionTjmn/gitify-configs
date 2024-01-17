@@ -69,7 +69,7 @@ FH:   while(<$fh>) {
           # Cisco
           $hostname=$1;
           last FH;
-        } elsif(/^sysname ([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)$/) {
+        } elsif(/^\s?sysname ([a-zA-Z0-9]+[a-zA-Z0-9\-\_\. ]*)$/) {
           # Huawei
           $hostname=$1;
           last FH;
